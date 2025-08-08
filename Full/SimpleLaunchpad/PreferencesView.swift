@@ -17,36 +17,42 @@ struct PreferencesView: View {
         case advanced = "高级"
         
         var id: String { rawValue }
+        var icon: String {
+            switch self {
+            case .general: return "gear"
+            case .apps: return "app.badge"
+            case .advanced: return "command"
+            }
+        }
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header View
-            HStack {
-                Spacer()
-                Button("完成") {
-                    onCloseAction()
-                }
-                .keyboardShortcut(.cancelAction)
-                .padding(.trailing, 10)
-            }
-            .padding(.top, 10)
-            
-            Divider()
-            
-            // Tab Selection View
-            Picker("设置标签页", selection: $selectedTab) {
+        HStack(spacing: 0) {
+            // 侧边栏
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(PreferenceTab.allCases) { tab in
-                    Text(tab.rawValue).tag(tab)
+                    Button {
+                        selectedTab = tab
+                    } label: {
+                        Label(tab.rawValue, systemImage: tab.icon)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .background(selectedTab == tab ? Color.accentColor.opacity(0.2) : Color.clear)
+                    .cornerRadius(6)
                 }
+                Spacer()
             }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding()
+            .frame(width: 180)
+            .padding(12)
+            .background(Color(nsColor: .windowBackgroundColor))
             
             Divider()
             
-            // Tab Content View
-            Group {
+            // 主内容区
+            VStack(spacing: 0) {
                 switch selectedTab {
                 case .general:
                     GeneralPreferencesView()
@@ -55,32 +61,20 @@ struct PreferencesView: View {
                 case .advanced:
                     AdvancedPreferencesView()
                 }
-            }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            Divider()
-            
-            // Footer Relaunch Button
-            HStack {
-                Spacer()
-                Button("重新启动应用") {
-                    relaunchApplication()
+                
+                Divider()
+                
+                HStack {
+                    Spacer()
+                    Button("完成") {
+                        onCloseAction()
+                    }
+                    .keyboardShortcut(.escape)
                 }
-                .keyboardShortcut("r", modifiers: [.command, .shift])
-                Spacer()
+                .padding()
             }
-            .padding(.vertical, 6)
         }
-        .frame(minWidth: 400, minHeight: 300)
-    }
-    
-    private func relaunchApplication() {
-        let task = Process()
-        task.launchPath = "/usr/bin/open"
-        task.arguments = ["-n", Bundle.main.bundlePath]
-        try? task.run()
-        NSApp.terminate(nil)
+        .frame(minWidth: 600, minHeight: 400)
     }
 }
 
@@ -89,7 +83,7 @@ struct GeneralPreferencesView: View {
     @State private var launchOnLogin = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             Text("应用排序方式")
                 .font(.headline)
             

@@ -9,7 +9,7 @@ import Foundation
 
 extension Array where Element == ApplicationItem {
     static func loadSystemAndCustomApplications() -> [ApplicationItem] {
-        var searchPaths = ["/Applications", "/System/Applications"]
+        var searchPaths = ["/Applications", "/System/Applications", "/System/Applications/Utilities"]
         searchPaths.append(contentsOf: ApplicationSettings.main.currentSettings.customApplicationLocations)
         
         var discoveredApplications: [ApplicationItem] = []
@@ -21,7 +21,11 @@ extension Array where Element == ApplicationItem {
             
             for item in directoryContents where item.hasSuffix(".app") {
                 let fullPath = directoryPath + "/" + item
-                let appDisplayName = item.replacingOccurrences(of: ".app", with: "")
+                let appBundle = Bundle(path: fullPath)
+                let appDisplayName = appBundle?.localizedInfoDictionary?["CFBundleDisplayName"] as? String
+                    ?? appBundle?.infoDictionary?["CFBundleDisplayName"] as? String
+                    ?? item.replacingOccurrences(of: ".app", with: "")
+                
                 let category = determineApplicationCategory(applicationName: appDisplayName)
                 discoveredApplications.append(
                     ApplicationItem(

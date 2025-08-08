@@ -17,10 +17,18 @@ struct PaginatedApplicationGrid: View {
     private let scrollCooldown: TimeInterval = 0.4
     @State private var filterText = ""
     @State private var eventObserver: Any?
+    @State private var isClosing = false
+    let onClose: () -> Void
     
     var body: some View {
         ZStack {
-            GlassBackgroundEffect()
+            Color.clear
+                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onTapGesture {
+                    closeApp()
+                }
+                .background(GlassBackgroundEffect())
             
             VStack(spacing: 0) {
                 SearchBarView(text: $filterText)
@@ -33,7 +41,8 @@ struct PaginatedApplicationGrid: View {
                             ForEach(0..<applicationPages.count, id: \.self) { index in
                                 ApplicationGridView(
                                     applications: applicationPages[index],
-                                    columnCount: columnsPerPage
+                                    columnCount: columnsPerPage,
+                                    onClose: onClose
                                 )
                                 .frame(width: geometry.size.width, height: geometry.size.height)
                             }
@@ -65,8 +74,18 @@ struct PaginatedApplicationGrid: View {
                     .padding(.top, 15)
                     .padding(.bottom, 90)
                 } else {
-                    FilteredResultsView(applications: filteredApplications())
+                    FilteredResultsView(
+                        applications: filteredApplications(),
+                        onClose: onClose
+                    )
                 }
+            }
+            .scaleEffect(isClosing ? 0.9 : 1)
+            .opacity(isClosing ? 0 : 1)
+            .animation(.easeInOut(duration: 0.3), value: isClosing)
+            .onAppear {
+                currentPageIndex = 0 // 每次出现时重置到第一页
+                filterText = "" // 清空搜索框
             }
         }
     }
@@ -91,14 +110,13 @@ struct PaginatedApplicationGrid: View {
     }
     
     private func registerEventHandlers() {
-        // 鼠标滚轮翻页
         eventObserver = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
             let now = Date()
             if now.timeIntervalSince(lastScrollTimestamp) < scrollCooldown {
                 return event
             }
             
-            let scrollThreshold: CGFloat = 10
+            let scrollThreshold: CGFloat = 3
             if event.scrollingDeltaY < -scrollThreshold {
                 currentPageIndex = min(currentPageIndex + 1, applicationPages.count - 1)
                 lastScrollTimestamp = now
@@ -127,6 +145,15 @@ struct PaginatedApplicationGrid: View {
             NSEvent.removeMonitor(observer)
         }
     }
+    
+    private func closeApp() {
+        withAnimation(.easeIn(duration: 0.3)) {
+            isClosing = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            onClose() // 调用回调而不是直接退出
+        }
+    }
 }
 
 // MARK: - Subviews
@@ -149,15 +176,20 @@ private struct SearchBarView: View {
     var body: some View {
         HStack {
             Spacer()
-            SearchField(text: $text)
-                .frame(width: 250, height: 30)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
+            TextField("搜索应用...", text: $text)
+                .textFieldStyle(PlainTextFieldStyle())
+                .padding(.horizontal, 15)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(Color.white.opacity(0.1))
+                    )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(0.4), radius: 5, x: 0, y: 2)
+                .frame(width: 300)
+                .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
             Spacer()
         }
     }
@@ -219,6 +251,9 @@ private struct PageIndicatorView: View {
 private struct FilteredResultsView: View {
     let applications: [ApplicationItem]
     private let columns = 7
+    @State private var launchingAppID: UUID?
+    @State private var isClosing = false
+    let onClose: () -> Void
     
     var body: some View {
         GeometryReader { geometry in
@@ -231,16 +266,46 @@ private struct FilteredResultsView: View {
                     spacing: 20
                 ) {
                     ForEach(applications) { app in
-                        ApplicationCellView(
-                            application: app,
-                            iconSize: 60,
-                            fontSize: 12,
-                            cellWidth: 100
+                        AppIconView(
+                            app: app,
+                            layoutMetrics: LayoutMetrics(
+                                horizontalPadding: 0,
+                                verticalPadding: 0,
+                                spacing: 20,
+                                cellSize: 100,
+                                iconSize: 60,
+                                fontSize: 12
+                            ),
+                            isLaunching: launchingAppID == app.id,
+                            onTap: {
+                                launchApp(app)
+                            }
                         )
                     }
                 }
                 .padding(.horizontal, 50)
                 .padding(.vertical, 40)
+            }
+            .scaleEffect(isClosing ? 0.9 : 1)
+            .opacity(isClosing ? 0 : 1)
+            .animation(.easeInOut(duration: 0.3), value: isClosing)
+        }
+    }
+    
+    private func launchApp(_ app: ApplicationItem) {
+        withAnimation(.easeOut(duration: 0.2)) {
+            launchingAppID = app.id
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            NSWorkspace.shared.open(URL(fileURLWithPath: app.location))
+            
+            withAnimation(.easeIn(duration: 0.3)) {
+                isClosing = true
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                onClose() // 调用回调而不是直接退出
             }
         }
     }
