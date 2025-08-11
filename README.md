@@ -7,6 +7,11 @@ This project is in developing....
 #### 该死的苹果😡把LaunchPad还给我！
 #### 这个项目正在开发中...... 仍然很多不稳定因素！
 
+![Swift](https://img.shields.io/badge/Swift-5.5-orange.svg)
+![Platform](https://img.shields.io/badge/macOS-15+-blue.svg)
+![License](https://img.shields.io/badge/License-GPLv3-green.svg)
+![GitHub all releases](https://img.shields.io/github/downloads/laobamac/SimpleLaunchpad/total?color=white&style=plastic)
+
 ## 项目简介
 
 SimpleLaunchpad 是为 macOS Tahoe 设计的启动台替代应用。由于 Tahoe Beta5 开始 Apple 移除了原生的启动台功能，这个开源项目旨在为用户提供类似的应用程序启动体验。
