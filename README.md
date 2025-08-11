@@ -9,7 +9,7 @@ This project is in developing....
 
 ![Swift](https://img.shields.io/badge/Swift-5.5-orange.svg)
 ![Platform](https://img.shields.io/badge/macOS-15+-blue.svg)
-![License](https://img.shields.io/badge/License-GPLv3-green.svg)
+![License](https://img.shields.io/badge/License-AGPLv3-green.svg)
 ![GitHub all releases](https://img.shields.io/github/downloads/laobamac/SimpleLaunchpad/total?color=white&style=plastic)
 
 ## 项目简介
